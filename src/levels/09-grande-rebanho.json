@@ -1,0 +1,14 @@
+{
+  "id": "grande-rebanho",
+  "title": "O grande rebanho",
+  "tip": "Sem pular, não tem jeito. Pense antes de deslizar!",
+  "map": [
+    "......",
+    ".##...",
+    "..sso.",
+    "..os..",
+    "o..~..",
+    "......"
+  ],
+  "par": 10
+}

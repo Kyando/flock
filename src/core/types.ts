@@ -11,24 +11,12 @@ export const DELTA: Record<Dir, readonly [dx: number, dy: number]> = {
 /**
  * Ground under the pieces.
  * - grass: plain floor.  - void: no ground (off the pasture), blocks like the edge.
- * - water: a stream; blocks sliding like void, but can be jumped over.
- * - rock: low obstacle, can be jumped over.  - tree: tall obstacle, never jumped.
- * - pen: a sheep resting here counts as herded.  - mud: whatever slides in, stops.
- * - arrow: turns whatever slides in.  - spring: launches animals over the next tile.
+ * - rock: blocks.  - pen: a sheep resting here counts as herded.  - mud: whatever slides in, stops.
  */
-export type Terrain =
-  | { kind: 'grass' }
-  | { kind: 'void' }
-  | { kind: 'water' }
-  | { kind: 'rock' }
-  | { kind: 'tree' }
-  | { kind: 'pen' }
-  | { kind: 'mud' }
-  | { kind: 'arrow'; dir: Dir }
-  | { kind: 'spring' };
+export type Terrain = { kind: 'grass' } | { kind: 'void' } | { kind: 'rock' } | { kind: 'pen' } | { kind: 'mud' };
 
-/** Things the player swipes. Sheep must reach the pens; goats hop over pieces; hay is a heavy block. */
-export type PieceKind = 'sheep' | 'goat' | 'hay';
+/** Things the player swipes. Sheep must reach the pens and can jump over each other; hay is a heavy block. */
+export type PieceKind = 'sheep' | 'hay';
 
 export interface LevelDef {
   id: string;
@@ -39,10 +27,8 @@ export interface LevelDef {
   intro?: string;
   /**
    * ASCII map, one string per row. Legend:
-   *  .  grass      _  void      =  water     #  rock      T  tree     o  pen     ~  mud
-   *  ^ > v <  arrows          *  spring (mushroom)
-   *  s  sheep      S  sheep already on a pen
-   *  g  goat       h  hay bale
+   *  .  grass      _  void      #  rock      o  pen      ~  mud
+   *  s  sheep      S  sheep already on a pen      h  hay bale
    */
   map: string[];
   /** Fewest swipes that solve it — written by `npm run levels -- --write`. */

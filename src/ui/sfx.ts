@@ -28,9 +28,6 @@ export class Sfx {
     this.tone(500, 0.14, 'sine', 0.07, 0, 980);
   }
 
-  boing(): void {
-    this.tone(260, 0.26, 'sine', 0.09, 0, 1150);
-  }
 
   baa(): void {
     // A tiny wobbly bleat.

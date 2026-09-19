@@ -14,7 +14,7 @@ const dir = join(import.meta.dirname, '../src/levels');
 const write = process.argv.includes('--write');
 const filter = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? '';
 const ARROW = { up: '↑', right: '→', down: '↓', left: '←' } as const;
-const NAME = { sheep: 'ovelha', goat: 'cabra', hay: 'feno' } as const;
+const NAME = { sheep: 'ovelha', hay: 'feno' } as const;
 
 /** Names pieces by kind and reading order: "ovelha 2", "feno". */
 function names(b: Board): string[] {

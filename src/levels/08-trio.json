@@ -1,0 +1,13 @@
+{
+  "id": "trio",
+  "title": "Trio",
+  "tip": "Três ovelhas, três currais. Quem pula primeiro?",
+  "map": [
+    "....o",
+    "...o.",
+    ".sss~",
+    ".#...",
+    ".o..."
+  ],
+  "par": 8
+}

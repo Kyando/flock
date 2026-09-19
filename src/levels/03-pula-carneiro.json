@@ -1,0 +1,14 @@
+{
+  "id": "pula-carneiro",
+  "title": "Pula-carneiro",
+  "tip": "Arraste uma ovelha na direção de outra colada nela: ela pula por cima e para logo depois.",
+  "intro": "jump",
+  "map": [
+    "..o..",
+    ".....",
+    "..o..",
+    "..s..",
+    "..s.."
+  ],
+  "par": 3
+}

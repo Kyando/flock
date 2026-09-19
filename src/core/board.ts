@@ -20,9 +20,7 @@ export interface Board {
 /** One beat of a move, used by the UI to animate. */
 export interface Step {
   at: number;
-  how: 'slide' | 'hop' | 'spring';
-  /** Direction of travel after this step (arrows can turn it). */
-  dir: Dir;
+  how: 'slide' | 'jump';
 }
 
 export interface MoveResult {
@@ -30,27 +28,24 @@ export interface MoveResult {
   /** Where the piece ends up (same as the start when it couldn't budge). */
   to: number;
   /** Why it stopped — handy for sound/feedback. */
-  stop: 'blocked' | 'mud' | 'spring' | 'loop';
+  stop: 'blocked' | 'mud' | 'jump';
+}
+
+export interface Rules {
+  /** Sheep may jump over an adjacent sheep. Off only to measure how much a level needs jumping. */
+  jump: boolean;
 }
 
 const TERRAIN: Record<string, Terrain> = {
   '.': { kind: 'grass' },
   _: { kind: 'void' },
-  '=': { kind: 'water' },
   '#': { kind: 'rock' },
-  T: { kind: 'tree' },
   o: { kind: 'pen' },
   '~': { kind: 'mud' },
-  '^': { kind: 'arrow', dir: 'up' },
-  '>': { kind: 'arrow', dir: 'right' },
-  v: { kind: 'arrow', dir: 'down' },
-  '<': { kind: 'arrow', dir: 'left' },
-  '*': { kind: 'spring' },
 };
 const PIECES: Record<string, [PieceKind, Terrain]> = {
   s: ['sheep', { kind: 'grass' }],
   S: ['sheep', { kind: 'pen' }],
-  g: ['goat', { kind: 'grass' }],
   h: ['hay', { kind: 'grass' }],
 };
 
@@ -94,71 +89,43 @@ export function step(b: Board, at: number, dir: Dir): number {
   return ny * b.width + nx;
 }
 
-const isGround = (t: Terrain) => t.kind !== 'void' && t.kind !== 'water' && t.kind !== 'rock' && t.kind !== 'tree';
+const isGround = (t: Terrain) => t.kind !== 'void' && t.kind !== 'rock';
 
 /**
- * Slides `mover` in `dir` until something stops it. `occupied(cell)` tells whether another piece is there.
+ * Moves `mover` in `dir`. `occupant(cell)` tells which piece kind is on a cell, if any.
  *
  * Rules:
- * - Pieces slide tile by tile until the next tile is an edge, void, rock, tree or another piece.
- * - Mud stops whatever enters it. Arrows turn whatever enters them.
- * - Springs launch animals (not hay) over the next tile — a rock, water, gap or piece, but not a tree —
- *   and they keep sliding from where they land. If the landing tile is taken, they stop on the spring.
- * - Goats hop over a piece in their way when the tile beyond is free, and keep sliding.
+ * - A jump is its own action: a sheep swiped towards an adjacent sheep leaps over it, lands two tiles
+ *   away and stops there. It needs that landing tile to be free ground; otherwise nothing happens.
+ * - Otherwise the piece slides tile by tile until the next tile is an edge, void, rock or another piece.
+ *   Sliding never turns into a jump: a sheep that slides into another sheep just stops.
+ * - Mud stops whatever enters it.
  */
 export function simulate(
   b: Board,
   mover: PieceKind,
   from: number,
   dir: Dir,
-  occupied: (cell: number) => boolean,
+  occupant: (cell: number) => PieceKind | null,
+  rules: Rules = { jump: true },
 ): MoveResult {
-  const free = (c: number) => c >= 0 && isGround(b.terrain[c]) && !occupied(c);
+  const free = (c: number) => c >= 0 && isGround(b.terrain[c]) && !occupant(c);
   const steps: Step[] = [];
-  const seen = new Set<string>();
   let at = from;
-  let heading = dir;
 
-  const finish = (stop: MoveResult['stop']): MoveResult => ({ steps, to: at, stop });
+  const first = step(b, from, dir);
+  if (rules.jump && mover === 'sheep' && first >= 0 && occupant(first) === 'sheep') {
+    const land = step(b, first, dir);
+    if (!free(land)) return { steps, to: from, stop: 'blocked' };
+    return { steps: [{ at: land, how: 'jump' }], to: land, stop: 'jump' };
+  }
 
   for (;;) {
-    const key = `${at}:${heading}`;
-    if (seen.has(key)) return finish('loop');
-    seen.add(key);
-
-    const next = step(b, at, heading);
-    if (free(next)) {
-      at = next;
-      steps.push({ at, how: 'slide', dir: heading });
-    } else {
-      const beyond = next >= 0 ? step(b, next, heading) : -1;
-      if (mover === 'goat' && next >= 0 && occupied(next) && free(beyond)) {
-        at = beyond;
-        steps.push({ at, how: 'hop', dir: heading });
-      } else {
-        return finish('blocked');
-      }
-    }
-
-    // Tile effects on arrival. A spring can chain into another tile's effect, hence the loop.
-    for (;;) {
-      const t = b.terrain[at];
-      if (t.kind === 'mud') return finish('mud');
-      if (t.kind === 'arrow') {
-        heading = t.dir;
-        steps[steps.length - 1].dir = heading;
-        break;
-      }
-      if (t.kind === 'spring' && mover !== 'hay') {
-        const over = step(b, at, heading);
-        const land = over >= 0 ? step(b, over, heading) : -1;
-        if (b.terrain[over]?.kind === 'tree' || !free(land)) return finish('spring');
-        at = land;
-        steps.push({ at, how: 'spring', dir: heading });
-        continue;
-      }
-      break;
-    }
+    const next = step(b, at, dir);
+    if (!free(next)) return { steps, to: at, stop: 'blocked' };
+    at = next;
+    steps.push({ at, how: 'slide' });
+    if (b.terrain[at].kind === 'mud') return { steps, to: at, stop: 'mud' };
   }
 }
 
@@ -167,9 +134,10 @@ export type Positions = number[];
 
 export const startPositions = (b: Board): Positions => b.start.map((p) => p.at);
 
-export function move(b: Board, pos: Positions, id: number, dir: Dir): MoveResult {
-  const others = new Set(pos.filter((_, i) => i !== id));
-  return simulate(b, b.start[id].kind, pos[id], dir, (c) => others.has(c));
+export function move(b: Board, pos: Positions, id: number, dir: Dir, rules?: Rules): MoveResult {
+  const kindAt = new Map<number, PieceKind>();
+  pos.forEach((c, i) => i !== id && kindAt.set(c, b.start[i].kind));
+  return simulate(b, b.start[id].kind, pos[id], dir, (c) => kindAt.get(c) ?? null, rules);
 }
 
 export function isSolved(b: Board, pos: Positions): boolean {

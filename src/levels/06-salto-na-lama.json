@@ -1,0 +1,13 @@
+{
+  "id": "salto-na-lama",
+  "title": "Salto na lama",
+  "tip": "Pular é um jeito certeiro de parar onde você quer.",
+  "map": [
+    "~....",
+    ".oo.~",
+    ".ss..",
+    "#....",
+    "....."
+  ],
+  "par": 7
+}

@@ -5,8 +5,9 @@
  *   node scripts/search-levels.ts <w>x<h> "<items>" [--par 4-8] [--feature ~] [--tries 4000] [--seed 1] [--base "row|row"]
  *   node scripts/search-levels.ts 6x6 "ss oo ## h" --feature h --par 5-9
  *
- * Items use the map legend (s g h o # T ~ ^ > v < * _). `--feature X` keeps only layouts that become
- * unsolvable (or longer) when every X is turned into grass (a goat becomes hay, so only its hop is removed). `--base` gives a fixed map to drop items on.
+ * Items use the map legend (s S h o # ~ _). `--feature X` keeps only layouts that become unsolvable (or longer)
+ * when every X is turned into grass; `--feature jump` does the same with jumping turned off. `--base` gives a
+ * fixed map to drop items on.
  */
 import { parseBoard } from '../src/core/board.ts';
 import { solve } from '../src/core/solver.ts';
@@ -26,7 +27,7 @@ const base = opt('base', '');
 let seed = Number(opt('seed', '1'));
 const rand = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
 
-const PIECE_ON = { s: '.', S: 'o', g: 'h', h: '.' } as Record<string, string>;
+const PIECE_ON = { s: '.', S: 'o', h: '.' } as Record<string, string>;
 const found = new Map<string, { par: number; without: string; map: string[]; explored: number }>();
 
 for (let t = 0; t < tries; t++) {
@@ -49,9 +50,10 @@ for (let t = 0; t < tries; t++) {
   if (!sol || sol.par < minPar || sol.par > maxPar) continue;
   let without = '';
   if (feature) {
-    const plain = map.map((r) => r.split('').map((c) => (c === feature ? (PIECE_ON[c] ?? '.') : c)).join(''));
+    const noJump = feature === 'jump';
+    const plain = noJump ? map : map.map((r) => r.split('').map((c) => (c === feature ? (PIECE_ON[c] ?? '.') : c)).join(''));
     try {
-      const alt = solve(parseBoard({ id: 'alt', title: '', map: plain }), undefined, 80_000);
+      const alt = solve(parseBoard({ id: 'alt', title: '', map: plain }), undefined, 80_000, { jump: !noJump });
       if (alt && alt.par <= sol.par) continue;
       without = alt ? `sem ${feature}: par ${alt.par}` : `sem ${feature}: impossível`;
     } catch {

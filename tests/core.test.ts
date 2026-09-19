@@ -25,9 +25,8 @@ describe('sliding', () => {
     expect(go(b, 0, 'right').steps).toHaveLength(0);
   });
 
-  it('treats void and water as walls', () => {
+  it('treats void as a wall', () => {
     expect(go(board('s._o'), 0, 'right').to).toBe(1);
-    expect(go(board('s.=o'), 0, 'right').to).toBe(1);
   });
 
   it('stops in mud', () => {
@@ -36,49 +35,36 @@ describe('sliding', () => {
     expect(r.to).toBe(2);
     expect(r.stop).toBe('mud');
   });
-
-  it('turns on arrows and stops on one when the new way is blocked', () => {
-    const b = board('s.v', '...', '..o');
-    expect(go(b, 0, 'right').to).toBe(cell(b, 2, 2));
-    const c = board('s.v', '..#', '..o');
-    expect(go(c, 0, 'right').to).toBe(cell(c, 2, 0));
-  });
-
-  it('gives up on arrow loops instead of spinning forever', () => {
-    const b = board('s>v', '.^<', '..o');
-    const r = go(b, 0, 'right');
-    expect(r.stop).toBe('loop');
-  });
 });
 
 describe('jumping', () => {
-  it('springs launch animals over a rock, water or a piece', () => {
-    expect(go(board('s*#..o'), 0, 'right').to).toBe(5);
-    expect(go(board('s*=..o'), 0, 'right').to).toBe(5);
-    const r = go(board('s*h.#o'), 0, 'right');
-    expect(r.to).toBe(3);
-    expect(r.steps.map((st) => st.how)).toEqual(['slide', 'spring']);
+  it('a sheep swiped into an adjacent sheep jumps over it and stops right after', () => {
+    const r = go(board('ss...', 'oo...'), 0, 'right');
+    expect(r.to).toBe(2);
+    expect(r.stop).toBe('jump');
+    expect(r.steps).toEqual([{ at: 2, how: 'jump' }]);
   });
 
-  it("springs don't clear trees, and the animal waits on the spring when it can't land", () => {
-    expect(go(board('s*T..o'), 0, 'right').to).toBe(1);
-    expect(go(board('s*##.o'), 0, 'right').to).toBe(1);
+  it("doesn't move when the landing tile is taken or blocked", () => {
+    expect(go(board('sss', 'ooo'), 0, 'right').to).toBe(0);
+    expect(go(board('ss#', 'oo.'), 0, 'right').to).toBe(0);
+    expect(go(board('ss', 'oo'), 0, 'right').to).toBe(0);
   });
 
-  it('hay rolls over springs like grass', () => {
-    const b = board('h*.#', 's..o');
-    expect(go(b, 0, 'right').to).toBe(2);
+  it('never jumps at the end of a slide', () => {
+    const r = go(board('s..s..', 'oo....'), 0, 'right');
+    expect(r.to).toBe(2);
+    expect(r.stop).toBe('blocked');
   });
 
-  it('goats hop over pieces but not rocks', () => {
-    const b = board('gs..o');
-    expect(go(b, 0, 'right').to).toBe(4);
-    expect(go(b, 0, 'right').steps.map((s) => s.how)).toEqual(['hop', 'slide', 'slide']);
-    expect(go(board('g#...', 's...o'), 0, 'right').to).toBe(0);
-  });
-
-  it("sheep don't hop", () => {
+  it('only sheep jump, and only over sheep', () => {
     expect(go(board('sh..o'), 0, 'right').to).toBe(0);
+    expect(go(board('hs..o'), 0, 'right').to).toBe(0);
+  });
+
+  it('can be turned off to measure how much a level needs it', () => {
+    const b = board('ss...', 'oo...');
+    expect(move(b, startPositions(b), 0, 'right', { jump: false }).to).toBe(0);
   });
 });
 

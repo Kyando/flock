@@ -1,0 +1,13 @@
+{
+  "id": "feno-e-salto",
+  "title": "Feno e salto",
+  "tip": "Às vezes o feno precisa sair do caminho primeiro.",
+  "map": [
+    "...#h",
+    ".so..",
+    ".s.#.",
+    ".o...",
+    "....."
+  ],
+  "par": 7
+}

@@ -14,34 +14,22 @@ export interface LevelViewOptions {
   onSolved(): void;
 }
 
-export const PIECE_GLYPH: Record<PieceKind, string> = { sheep: '🐑', goat: '🐐', hay: '🌾' };
-export const PIECE_NAME: Record<PieceKind, string> = { sheep: 'Ovelha', goat: 'Cabra', hay: 'Fardo de feno' };
+export const PIECE_GLYPH: Record<PieceKind, string> = { sheep: '🐑', hay: '🌾' };
+export const PIECE_NAME: Record<PieceKind, string> = { sheep: 'Ovelha', hay: 'Fardo de feno' };
 const KEY_DIR: Record<string, Dir> = {
   ArrowUp: 'up', ArrowRight: 'right', ArrowDown: 'down', ArrowLeft: 'left',
   w: 'up', d: 'right', s: 'down', a: 'left',
 };
-const ARROW_ROT: Record<Dir, number> = { up: -90, right: 0, down: 90, left: 180 };
 
 /** Milliseconds per animated beat. */
 const T_SLIDE = 70;
-const T_HOP = 230;
-const T_SPRING = 300;
+const T_JUMP = 300;
 
 /** Renders one terrain tile's contents (the tile itself is styled by its class). */
 export function tileArt(t: Terrain): Node | null {
   switch (t.kind) {
     case 'rock':
       return h('span', { class: 'prop' }, '🪨');
-    case 'tree':
-      return h('span', { class: 'prop prop--tall' }, '🌳');
-    case 'spring':
-      return h('span', { class: 'prop prop--spring' }, '🍄');
-    case 'arrow':
-      return h(
-        'span',
-        { class: 'arrow', style: `--rot: ${ARROW_ROT[t.dir]}deg` },
-        svg('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="m12.5 6 6 6-6 6"/></svg>'),
-      );
     case 'pen':
       return h('span', { class: 'pen-mark', 'aria-hidden': 'true' });
     default:
@@ -290,58 +278,43 @@ export class LevelView {
       return;
     }
     this.busy = true;
-    const turnFace = (d: Dir) => {
-      if (d === 'left' || d === 'right') this.facing[id] = d === 'right' ? -1 : 1;
-      el.style.setProperty('--face', String(this.facing[id]));
-    };
-    turnFace(dir);
-    this.opts.sfx.slide();
-    await this.animate(id, from, r, turnFace);
+    if (dir === 'left' || dir === 'right') this.facing[id] = dir === 'right' ? -1 : 1;
+    el.style.setProperty('--face', String(this.facing[id]));
+    if (r.stop === 'jump') this.opts.sfx.hop();
+    else this.opts.sfx.slide();
+    await this.animate(id, from, r);
     this.busy = false;
     this.land(id, r);
     this.sync();
     if (this.s.solved) this.celebrate();
   }
 
-  private animate(id: number, from: number, r: MoveResult, turnFace: (d: Dir) => void): Promise<void> {
+  private animate(id: number, from: number, r: MoveResult): Promise<void> {
     const el = this.pieces[id];
     if (reducedMotion()) {
       this.place(id);
       return Promise.resolve();
     }
-    // Keyframes along the path; hops and springs arc up and grow a little.
-    const frames: { t: number; x: number; y: number; lift: number }[] = [];
-    let t = 0;
-    let [px, py] = this.px(from);
-    frames.push({ t, x: px, y: py, lift: 0 });
-    for (const st of r.steps) {
-      const [x, y] = this.px(st.at);
-      const dur = st.how === 'slide' ? T_SLIDE : st.how === 'hop' ? T_HOP : T_SPRING;
-      if (st.how !== 'slide') {
-        frames.push({ t: t + dur / 2, x: (px + x) / 2, y: (py + y) / 2, lift: st.how === 'spring' ? 0.75 : 0.5 });
-      }
-      t += dur;
-      frames.push({ t, x, y, lift: 0 });
-      [px, py] = [x, y];
+    const [x0, y0] = this.px(from);
+    const [x1, y1] = this.px(r.to);
+    let anim: Animation;
+    if (r.stop === 'jump') {
+      // One arc over the other sheep: up, a little bigger, and down two tiles away.
+      const lift = this.cell * 0.55;
+      anim = el.animate(
+        [
+          { transform: `translate(${x0}px, ${y0}px) scale(1)` },
+          { transform: `translate(${(x0 + x1) / 2}px, ${(y0 + y1) / 2 - lift}px) scale(1.18)`, offset: 0.5 },
+          { transform: `translate(${x1}px, ${y1}px) scale(1)` },
+        ],
+        { duration: T_JUMP, easing: 'ease-in-out' },
+      );
+    } else {
+      anim = el.animate([{ transform: `translate(${x0}px, ${y0}px)` }, { transform: `translate(${x1}px, ${y1}px)` }], {
+        duration: Math.max(1, r.steps.length * T_SLIDE),
+        easing: 'linear',
+      });
     }
-    // Beats that turn or launch the piece, for sounds and facing.
-    let elapsed = 0;
-    for (const st of r.steps) {
-      elapsed += st.how === 'slide' ? T_SLIDE : st.how === 'hop' ? T_HOP : T_SPRING;
-      const at = elapsed - (st.how === 'slide' ? 0 : (st.how === 'hop' ? T_HOP : T_SPRING));
-      if (st.how === 'spring') window.setTimeout(() => this.opts.sfx.boing(), at);
-      if (st.how === 'hop') window.setTimeout(() => this.opts.sfx.hop(), at);
-      const turn = st.dir;
-      window.setTimeout(() => turnFace(turn), elapsed);
-    }
-    const total = Math.max(t, 1);
-    const anim = el.animate(
-      frames.map((f) => ({
-        offset: f.t / total,
-        transform: `translate(${f.x}px, ${f.y - f.lift * this.cell}px) scale(${1 + f.lift * 0.3})`,
-      })),
-      { duration: total, easing: 'linear' },
-    );
     el.classList.add('is-moving');
     this.place(id);
     return anim.finished.then(

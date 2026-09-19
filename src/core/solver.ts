@@ -1,4 +1,4 @@
-import { isSolved, move, startPositions, type Board, type Positions } from './board.ts';
+import { isSolved, move, startPositions, type Board, type Positions, type Rules } from './board.ts';
 import { DIRS, type Dir } from './types.ts';
 
 export interface SolverMove {
@@ -25,7 +25,7 @@ function keyOf(b: Board, pos: Positions): string {
 }
 
 /** Breadth-first search over swipes. Returns null when the level can't be solved within `limit` states. */
-export function solve(b: Board, from: Positions = startPositions(b), limit = 400_000): Solution | null {
+export function solve(b: Board, from: Positions = startPositions(b), limit = 400_000, rules?: Rules): Solution | null {
   if (isSolved(b, from)) return { par: 0, moves: [], explored: 1 };
   const parent = new Map<string, { prev: string; move: SolverMove } | null>();
   const startKey = keyOf(b, from);
@@ -37,7 +37,7 @@ export function solve(b: Board, from: Positions = startPositions(b), limit = 400
     for (const [key, pos] of frontier) {
       for (let id = 0; id < pos.length; id++) {
         for (const dir of DIRS) {
-          const r = move(b, pos, id, dir);
+          const r = move(b, pos, id, dir, rules);
           if (r.to === pos[id]) continue;
           const np = pos.slice();
           np[id] = r.to;
