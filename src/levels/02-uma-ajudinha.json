@@ -1,0 +1,13 @@
+{
+  "id": "uma-ajudinha",
+  "title": "Uma ajudinha",
+  "tip": "Uma ovelha pode servir de parede para outra. A ordem importa!",
+  "map": [
+    "..o..",
+    "..o..",
+    ".....",
+    "..s..",
+    "s..#."
+  ],
+  "par": 3
+}

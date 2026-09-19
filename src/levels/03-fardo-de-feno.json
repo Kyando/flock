@@ -1,0 +1,14 @@
+{
+  "id": "fardo-de-feno",
+  "title": "Fardo de feno",
+  "tip": "O feno também desliza. Use-o como apoio para a ovelha parar.",
+  "intro": "hay",
+  "map": [
+    "s#..h",
+    ".....",
+    "....#",
+    ".....",
+    "...o."
+  ],
+  "par": 5
+}

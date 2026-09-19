@@ -1,0 +1,14 @@
+{
+  "id": "cogumelo",
+  "title": "Cogumelo pula-pula",
+  "tip": "Pisou no cogumelo, pulou uma casa — por cima de pedras e bichos.",
+  "intro": "spring",
+  "map": [
+    ".#.*.",
+    "s#...",
+    "....o",
+    "...#.",
+    "....."
+  ],
+  "par": 6
+}

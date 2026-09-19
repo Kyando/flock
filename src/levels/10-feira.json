@@ -1,0 +1,14 @@
+{
+  "id": "feira",
+  "title": "Dia de feira",
+  "tip": "Feno, setas e lama no mesmo pasto.",
+  "map": [
+    "h>....",
+    "......",
+    ".o...o",
+    ".s....",
+    ".~...^",
+    "#....s"
+  ],
+  "par": 10
+}

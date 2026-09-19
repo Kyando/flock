@@ -1,0 +1,14 @@
+{
+  "id": "riacho",
+  "title": "Do outro lado do riacho",
+  "tip": "Ninguém atravessa a água deslizando. Pulando, talvez…",
+  "map": [
+    "s#...s",
+    "..**..",
+    "======",
+    "......",
+    "..o...",
+    "....o#"
+  ],
+  "par": 8
+}

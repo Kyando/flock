@@ -1,0 +1,13 @@
+{
+  "id": "primeiro-passeio",
+  "title": "Primeiro passeio",
+  "tip": "Arraste a ovelha: ela corre até bater em algo. Leve-a ao curral.",
+  "map": [
+    "#....",
+    "..s..",
+    ".....",
+    "....#",
+    "o...."
+  ],
+  "par": 2
+}

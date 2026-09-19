@@ -1,0 +1,14 @@
+{
+  "id": "lamacal",
+  "title": "Lamaçal",
+  "tip": "Quem entra na lama para na hora.",
+  "intro": "mud",
+  "map": [
+    "..o..",
+    ".....",
+    "..~..",
+    "#....",
+    ".s..."
+  ],
+  "par": 5
+}
